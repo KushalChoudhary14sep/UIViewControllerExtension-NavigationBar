@@ -1,0 +1,178 @@
+import UIKit
+
+extension UIViewController {
+    
+    //Call this function to re-intialize tthe tabBar if tabBar is used in the Application
+    @objc static func reInitializeTabBar(){
+        let vc = Storyboard.home.instanceOf(viewController: TabBarVC.self)!
+        let Nav = UINavigationController.init(rootViewController: vc)
+        AppDelegate.shared().window?.rootViewController = Nav
+        AppDelegate.shared().window?.makeKeyAndVisible()
+    }
+    
+    //Call this function to set back button in navigation bar
+    @objc func setLeftBackButton(){
+        let but = UIBarButtonItem(image: UIImage(imageLiteralResourceName: "back"), style: .done, target: self, action: #selector(popViewController))
+        navigationItem.leftBarButtonItem = but
+    }
+    
+    //Call this function to set title in navigation bar
+    @objc func setTittle(string:String){
+        self.navigationItem.titleView = nil;
+        self.title = string
+    }
+    
+    // Call this function to to set image in left of navigation bar
+    @objc func setTittleImage(imageName: String){
+        self.setTitleImage(UIImage(imageLiteralResourceName: imageName))
+    }
+    
+    private func setTitleImage(_ image : UIImage){
+        let size = CGRect(x:0, y: 0, width:90, height:26)
+        let imageView : UIImageView = UIImageView(frame: size)
+        imageView.image = image
+        imageView.contentMode = .scaleAspectFit
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(customView: imageView)
+    }
+    
+    //Call this function to set a button at right of navigation bar and assign a image to it, pass action to be performed in didTapBarButton.
+    @objc func setSingleRightBarbutton(buttonImage:UIImage,didTapBarButton:(()->())?){
+        let rigthbutton = BlockBarButtonItem(image: buttonImage, style: .plain) {
+            didTapBarButton?()
+        }        
+        self.navigationItem.rightBarButtonItems = [rigthbutton]
+    }
+    
+    func adjustScrollingInsets(){
+        extendedLayoutIncludesOpaqueBars = false
+        automaticallyAdjustsScrollViewInsets = false
+    }
+    
+    //Left to Right
+    func pushViewController(_ viewController:UIViewController) {
+        if let navigation = self as? UINavigationController{
+            navigation.pushViewController(viewController, animated: true)
+            return
+        }
+        self.navigationController?.pushViewController(viewController, animated: true)
+    }
+    
+    // Right to Left
+    @objc func popViewController(){
+        self.navigationItem.rightBarButtonItems?.removeAll()
+        self.navigationItem.leftBarButtonItems?.removeAll()
+        if /self.navigationController?.viewControllers.count > 1{
+            self.navigationController?.popViewController(animated: true)
+        }else{
+            self.navigationController?.dismiss(animated: true, completion: nil)
+        }
+    }
+    @objc func dissmissNavigationController(){
+        self.navigationController?.dismiss(animated: true, completion: nil)
+    }
+    
+    func popToViewController(_ viewController : UIViewController){
+        self.navigationController?.popToViewController(viewController, animated: false)
+    }
+    
+    func showPopup(_ controller: UIViewController, sourceView: UIView) {
+        let presentationController = AlwaysPresentAsPopover.configurePresentation(forController: controller)
+        presentationController.sourceView = sourceView
+        presentationController.sourceRect = sourceView.bounds
+        self.present(controller, animated: true)
+    }
+    
+}
+
+// Helper class used in setSingleRightBarbutton function present in above UIController extension.
+class BlockBarButtonItem: UIBarButtonItem {
+    private var actionHandler: (() -> ())?
+    
+    convenience init(title: String?, style: UIBarButtonItem.Style, actionHandler: (() -> ())?) {
+        self.init(title: title, style: style, target: nil, action: #selector(barButtonItemPressed))
+        self.target = self
+        self.actionHandler = actionHandler
+    }
+    
+    convenience init(image: UIImage?, style: UIBarButtonItem.Style, actionHandler: (() -> ())?) {
+        self.init(image: image, style: style, target: nil, action: #selector(barButtonItemPressed))
+        self.target = self
+        self.actionHandler = actionHandler
+    }
+    
+    @objc func barButtonItemPressed(sender: UIBarButtonItem) {
+        actionHandler?()
+    }
+}
+
+extension UIViewController{
+    @objc static func topMostViewController() -> UIViewController {
+        var topController = UIApplication.shared.keyWindow?.rootViewController;
+        while ((topController?.presentedViewController) != nil) {
+            topController = topController?.presentedViewController;
+        }
+        if let navigation = topController as? UINavigationController{
+            if let vc = navigation.viewControllers.last{
+                if let tabbar = vc as? UITabBarController{
+                    if let selected =  tabbar.selectedViewController{
+                        return selected
+                    }
+                }
+                return vc
+            }
+        }
+        return topController ?? UIViewController();
+    }
+}
+
+extension UIViewController{
+    // Call this function to add child view controller
+    func add(asChildViewController viewController: UIViewController) {
+        // Add Child View Controller
+        addChild(viewController)
+
+        // Add Child View as Subview
+        view.addSubview(viewController.view)
+
+        // Configure Child View
+        viewController.view.frame = view.bounds
+        viewController.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+
+        // Notify Child View Controller
+        viewController.didMove(toParent: self)
+    }
+    
+    // Call this function to remove child view controller
+    func remove(asChildViewController viewController: UIViewController) {
+        // Notify Child View Controller
+        viewController.willMove(toParent: nil)
+
+        if let view = viewController.view{
+        // Remove Child View From Superview
+            view.removeFromSuperview()
+        }
+        // Notify Child View Controller
+        viewController.removeFromParent()
+    }
+}
+
+extension UIViewController {
+    @objc static func topMostViewController() -> UIViewController {
+        var topController = UIApplication.shared.keyWindow?.rootViewController;
+        while ((topController?.presentedViewController) != nil) {
+            topController = topController?.presentedViewController;
+        }
+        if let navigation = topController as? UINavigationController{
+            if let vc = navigation.viewControllers.last{
+                if let tabbar = vc as? UITabBarController{
+                    if let selected =  tabbar.selectedViewController{
+                        return selected
+                    }
+                }
+                return vc
+                
+            }
+        }
+        return topController ?? UIViewController();
+    }
+}
